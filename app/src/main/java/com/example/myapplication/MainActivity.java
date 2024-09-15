@@ -35,14 +35,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "BluetoothTemp";
 
     private MqttClient mqttClient;
-    private String brokerUrl = "tcp://192.168.171.128:1883";
+    private String brokerUrl = "tcp://91.122.44.242:1883";
 
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSocket bluetoothSocket;
     private TextView temperatureTextView;
     private static final String DEVICE_ADDRESS = "C8:2E:18:C3:8D:82"; // MAC-адрес вашего устройства
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); // Стандартный UUID для SPP
-    String temperatureData = "0.0";
+    String temperatureData ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,13 +92,17 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupMqtt(){
        try {
-           mqttClient = new MqttClient(brokerUrl, MqttClient.generateClientId(), null);
+           if(mqttClient == null)
+               mqttClient = new MqttClient(brokerUrl, MqttClient.generateClientId(), null);
            MqttConnectOptions options = new MqttConnectOptions();
-           options.setKeepAliveInterval(20);
-           options.setCleanSession(true);
            options.setUserName("IoT");
            options.setPassword("KopanovAE".toCharArray());
-           mqttClient.connect(options);
+           if(!mqttClient.isConnected()) {
+               mqttClient.connect(options);
+               Toast.makeText(this, "Успешно подключенно к MQTT - брокеру", Toast.LENGTH_SHORT).show();
+           }
+           else
+               Toast.makeText(this, "Устройство уже подключенно к MQTT - брокеру", Toast.LENGTH_SHORT).show();
        } catch (MqttException e){
            Toast.makeText(this, "Не удалось подключиться к MQTT - брокеру", Toast.LENGTH_SHORT).show();
        }
@@ -107,10 +111,14 @@ public class MainActivity extends AppCompatActivity {
     private void sendDataToMqtt(String data) {
         if(mqttClient != null) {
             try {
-                MqttMessage message = new MqttMessage(data.getBytes());
-                message.setQos(1);
-                mqttClient.publish("temperature/topic", message);
-                Log.d(TAG, "Данные отправлены: " + data);
+                if (data!= null) {
+                    MqttMessage message = new MqttMessage(data.getBytes());
+                    message.setQos(1);
+                    mqttClient.publish("temperature/topic", message);
+                    Toast.makeText(this, "Данные успешно опубликованы", Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(this, "Нет данных для публикации", Toast.LENGTH_SHORT).show();
+                }
             } catch (MqttException e) {
                 e.printStackTrace();
             }
@@ -127,13 +135,9 @@ public class MainActivity extends AppCompatActivity {
             }else {
                if(bluetoothSocket == null)
                    bluetoothSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                if(!bluetoothSocket.isConnected()) {
-                    bluetoothSocket.connect();
-                    Toast.makeText(this, "Подключено к устройству", Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    Toast.makeText(this, "Устройство уже подключено", Toast.LENGTH_SHORT).show();
-                }
+               bluetoothSocket.connect();
+               //TODO: Сокет закрыт или занят обработка
+               Toast.makeText(this, "Подключено к устройству", Toast.LENGTH_SHORT).show();
             }
 
         } catch (IOException e) {
