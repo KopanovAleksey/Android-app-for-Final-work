@@ -136,7 +136,6 @@ public class MainActivity extends AppCompatActivity {
                if(bluetoothSocket == null)
                    bluetoothSocket = device.createRfcommSocketToServiceRecord(MY_UUID);
                bluetoothSocket.connect();
-               //TODO: Сокет закрыт или занят обработка
                Toast.makeText(this, "Подключено к устройству", Toast.LENGTH_SHORT).show();
             }
 
